@@ -40,6 +40,11 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Put the backend root on sys.path so `app` imports resolve. Without this only
+# `python -m pytest` works, because that form adds the working directory to
+# sys.path while the bare `pytest` console script does not — so the suite would
+# pass locally and fail in CI.
+pythonpath = ["."]
 filterwarnings = [
     "error",
     # Import-time deprecations from starlette's TestClient and its anyio
