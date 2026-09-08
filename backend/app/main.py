@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.routes import router
 from app.config import Settings, get_settings
 from app.errors import HealthPulseError
 
@@ -39,6 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     _register_error_handlers(app)
+    app.include_router(router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict[str, object]:
