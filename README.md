@@ -193,7 +193,7 @@ backend/
 │   ├── api/          routes, wire schemas, dependencies
 │   ├── config.py     analysis window and thresholds in one place
 │   └── errors.py     one error per failure mode
-└── tests/            119 tests
+└── tests/            120 tests
 
 frontend/
 ├── app/              server component page, design tokens
@@ -204,7 +204,7 @@ frontend/
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest -q      # 119 tests
+cd backend && .venv/bin/pytest -q      # 120 tests
 cd frontend && npm test                # 21 tests
 ```
 
