@@ -62,6 +62,14 @@ class WindowBounds:
     def end(self) -> date:
         return self.recent_end
 
+    @property
+    def baseline_days(self) -> int:
+        return (self.baseline_end - self.baseline_start).days + 1
+
+    @property
+    def recent_days(self) -> int:
+        return (self.recent_end - self.recent_start).days + 1
+
 
 @dataclass(frozen=True)
 class WindowSummary:

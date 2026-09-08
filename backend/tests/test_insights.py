@@ -71,6 +71,14 @@ def test_windows_span_exactly_baseline_plus_recent_days():
     assert total == BASELINE_DAYS + RECENT_DAYS == 28
 
 
+def test_bounds_report_their_own_length():
+    """Callers describing the window read it from the bounds, not from a metric."""
+    bounds = windows()
+
+    assert bounds.baseline_days == BASELINE_DAYS
+    assert bounds.recent_days == RECENT_DAYS
+
+
 def test_window_sizes_must_be_positive():
     with pytest.raises(ValueError, match="at least 1"):
         resolve_windows(ANCHOR, 0, 7)

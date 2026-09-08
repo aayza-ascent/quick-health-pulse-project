@@ -53,6 +53,10 @@ class Pulse:
     headline: MetricChange | None
     trends: dict[MetricKey, DailySeries]
     generated_at: datetime
+    # The threshold every comparison in `changes` was made against. Carried here
+    # so callers describing the analysis do not have to reach into an arbitrary
+    # metric to recover a parameter that applies to all of them.
+    threshold_pct: float
 
 
 class PulseService:
@@ -103,6 +107,7 @@ class PulseService:
             headline=select_headline(changes),
             trends=trends,
             generated_at=datetime.now(UTC),
+            threshold_pct=settings.change_threshold_pct,
         )
 
     def _patient(self) -> Patient:

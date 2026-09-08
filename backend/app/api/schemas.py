@@ -207,17 +207,22 @@ class PulseOut(BaseModel):
                 metric=pulse.headline.metric.key,
             )
         else:
-            sleep_change = pulse.changes[MetricKey.SLEEP]
             headline = HeadlineOut(
                 title=NO_CHANGE_TITLE,
                 body=NO_CHANGE_BODY.format(
-                    threshold=sleep_change.threshold_pct,
-                    baseline_days=sleep_change.baseline.coverage.expected_days,
+                    threshold=pulse.threshold_pct,
+                    baseline_days=pulse.bounds.baseline_days,
                 ),
             )
 
         return cls(
-            patient=PatientOut(**vars(pulse.patient)),
+            patient=PatientOut(
+                name=pulse.patient.name,
+                provider=pulse.patient.provider,
+                provider_label=pulse.patient.provider_label,
+                is_connected=pulse.patient.is_connected,
+                connection_status=pulse.patient.connection_status,
+            ),
             source=SourceOut(
                 provider=pulse.source.provider,
                 mode=pulse.source.mode,
@@ -226,8 +231,8 @@ class PulseOut(BaseModel):
             ),
             window=WindowSpecOut(
                 anchor_date=pulse.anchor,
-                baseline_days=pulse.changes[MetricKey.SLEEP].baseline.coverage.expected_days,
-                recent_days=pulse.changes[MetricKey.SLEEP].recent.coverage.expected_days,
+                baseline_days=pulse.bounds.baseline_days,
+                recent_days=pulse.bounds.recent_days,
                 baseline_start=pulse.bounds.baseline_start,
                 baseline_end=pulse.bounds.baseline_end,
                 recent_start=pulse.bounds.recent_start,
