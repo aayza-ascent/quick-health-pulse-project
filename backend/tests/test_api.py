@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from app.api.dependencies import provide_source
 from app.config import Settings
 from app.errors import JunctionRateLimitError
+from app.junction.fixtures import FixtureDataSource, FixtureProfile
 from app.junction.source import SourceDescriptor
 from app.main import create_app
 
@@ -113,6 +114,34 @@ def test_generated_data_is_never_labelled_as_coming_from_a_device(client: TestCl
     assert body["source"]["is_live"] is False
     assert body["source"]["label"] == "Simulated Fitbit data"
     assert body["patient"]["connection_status"] == "Demo data"
+
+
+def test_no_notable_change_is_stated_rather_than_left_blank():
+    """The default patient always has a decline, so this branch needs its own case.
+
+    "Nothing crossed the threshold" is a finding, and the headline has to say so
+    instead of collapsing to null and leaving an empty panel.
+    """
+    unchanging = FixtureProfile(
+        baseline_sleep_seconds=27_000,
+        recent_sleep_seconds=27_000,
+        baseline_resting_hr=58.0,
+        recent_resting_hr=58.0,
+        baseline_steps=6_500,
+        recent_steps=6_500,
+        jitter=0.01,
+    )
+
+    app = create_app(fixture_settings())
+    app.dependency_overrides[provide_source] = lambda: FixtureDataSource(profile=unchanging)
+
+    body = TestClient(app).get("/api/pulse").json()
+
+    assert body["headline"]["title"] == "No notable changes"
+    assert body["headline"]["metric"] is None
+    assert "10%" in body["headline"]["body"]
+    assert "21-day baseline" in body["headline"]["body"]
+    assert all(m["direction"] == "stable" for m in body["metrics"])
 
 
 # --- gaps --------------------------------------------------------------------
