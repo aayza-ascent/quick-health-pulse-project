@@ -33,14 +33,14 @@ to Junction.
 
 ```mermaid
 flowchart TD
-    J["Junction API<br/><i>sandbox</i>"]
-    F["Fixture generator<br/><i>deterministic, local</i>"]
-    P["HealthDataSource<br/><i>protocol</i>"]
-    N["Normalisation<br/><i>gap-aware daily series</i>"]
-    I["Insight engine<br/><i>pure, unit-tested</i>"]
-    A["FastAPI<br/><i>/api/pulse</i>"]
-    U["Next.js<br/><i>server component</i>"]
-    B["Browser"]
+    J["Junction API<br/>sandbox"]
+    F["Fixture generator<br/>deterministic, local"]
+    P["HealthDataSource<br/>protocol"]
+    N["Normalisation<br/>gap-aware daily series"]
+    I["Insight engine<br/>pure, unit-tested"]
+    A["FastAPI<br/>GET /api/pulse"]
+    U["Next.js<br/>server component"]
+    B["Browser<br/>no API key, ever"]
 
     J --> P
     F --> P
@@ -49,6 +49,7 @@ flowchart TD
     style J fill:#e8e5e0,stroke:#8a8279,color:#1c1917
     style F fill:#e8e5e0,stroke:#8a8279,color:#1c1917
     style I fill:#fdf8f0,stroke:#8a5a20,color:#1c1917
+    style B fill:#e8e5e0,stroke:#8a8279,color:#1c1917
 ```
 
 `HealthDataSource` is a `Protocol` with two methods. The live Junction client and the local
