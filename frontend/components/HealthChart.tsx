@@ -110,8 +110,13 @@ export function HealthChart({ trend, change }: { trend: Trend; change: MetricCha
               dataKey="value"
               stroke={colors.line}
               strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 3, fill: colors.line }}
+              // Observed days are marked individually, not just joined into a
+              // line. With sparse real data a measurement can have no observed
+              // neighbour to draw a segment to, and a dot-less line renders
+              // those days as nothing at all — an empty chart for a patient who
+              // does have data.
+              dot={{ r: 1.8, fill: colors.line, strokeWidth: 0 }}
+              activeDot={{ r: 3.5, fill: colors.line }}
               // Never bridge a missing day: a gap in the data is a gap in the
               // line. Bridging it would draw through measurements that do not
               // exist, which is the charting equivalent of zero-filling.

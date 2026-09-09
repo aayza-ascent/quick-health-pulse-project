@@ -20,9 +20,9 @@ from app.domain.metrics import MetricKey, MetricUnit
 from app.domain.narrative import (
     DISCLAIMER,
     HEADLINE_TITLE,
-    NO_CHANGE_BODY,
     NO_CHANGE_TITLE,
     describe_change,
+    describe_no_change,
     short_verdict,
 )
 from app.domain.series import Coverage, DailySeries
@@ -209,9 +209,14 @@ class PulseOut(BaseModel):
         else:
             headline = HeadlineOut(
                 title=NO_CHANGE_TITLE,
-                body=NO_CHANGE_BODY.format(
-                    threshold=pulse.threshold_pct,
+                body=describe_no_change(
+                    threshold_pct=pulse.threshold_pct,
                     baseline_days=pulse.bounds.baseline_days,
+                    uncomparable=[
+                        change.metric.label
+                        for change in pulse.changes.values()
+                        if change.direction is ChangeDirection.INSUFFICIENT_DATA
+                    ],
                 ),
             )
 

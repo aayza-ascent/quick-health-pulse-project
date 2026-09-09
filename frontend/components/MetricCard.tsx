@@ -25,9 +25,11 @@ export function MetricCard({ change }: { change: MetricChange }) {
         {insufficient ? "—" : formatValue(recent.mean, change.unit)}
       </p>
 
-      <p className="tabular mt-1 text-xs text-ink-subtle">
-        {recent.coverage.expected_days}-day average
-      </p>
+      {!insufficient && (
+        <p className="tabular mt-1 text-xs text-ink-subtle">
+          {recent.coverage.expected_days}-day average
+        </p>
+      )}
 
       <p className="tabular mt-3 flex items-baseline gap-1.5 text-sm text-ink-muted">
         <span aria-hidden="true" className="text-ink-subtle">

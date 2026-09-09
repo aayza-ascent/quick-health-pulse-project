@@ -5,6 +5,8 @@ properties that matter most for a service holding a third-party key: failures
 are reported in a shape the UI can act on, and the key never leaves the server.
 """
 
+from datetime import date, timedelta
+
 import httpx
 import pytest
 import respx
@@ -14,6 +16,7 @@ from app.api.dependencies import provide_source
 from app.config import Settings
 from app.errors import JunctionRateLimitError
 from app.junction.fixtures import FixtureDataSource, FixtureProfile
+from app.junction.models import ActivitySummary, SleepSummary
 from app.junction.source import SourceDescriptor
 from app.main import create_app
 
@@ -141,7 +144,56 @@ def test_no_notable_change_is_stated_rather_than_left_blank():
     assert body["headline"]["metric"] is None
     assert "10%" in body["headline"]["body"]
     assert "21-day baseline" in body["headline"]["body"]
+    assert "not compared" not in body["headline"]["body"]
     assert all(m["direction"] == "stable" for m in body["metrics"])
+
+
+def test_headline_names_metrics_that_could_not_be_compared():
+    """Regression from live sandbox data.
+
+    Junction's sandbox backfills 30 days of activity but only a handful of
+    nights of sleep, so a real payload can pair a comparable metric with two
+    that have too little coverage. The headline must not then claim every
+    metric was within the threshold.
+    """
+
+    class SparseSleepSource:
+        """Full activity coverage, sleep only on the most recent day."""
+
+        def describe(self) -> SourceDescriptor:
+            return SourceDescriptor(provider="fitbit", mode="junction")
+
+        async def fetch_sleep(self, start: date, end: date) -> list[SleepSummary]:
+            return [
+                SleepSummary.model_validate(
+                    {"calendar_date": end.isoformat(), "total": 27_000, "hr_lowest": 60}
+                )
+            ]
+
+        async def fetch_activity(self, start: date, end: date) -> list[ActivitySummary]:
+            days = (end - start).days
+            return [
+                ActivitySummary.model_validate(
+                    {
+                        "calendar_date": (start + timedelta(days=offset)).isoformat(),
+                        "steps": 7_000,
+                    }
+                )
+                for offset in range(days + 1)
+            ]
+
+    app = create_app(fixture_settings())
+    app.dependency_overrides[provide_source] = lambda: SparseSleepSource()
+
+    body = TestClient(app).get("/api/pulse").json()
+    headline = body["headline"]["body"]
+
+    assert "Sleep and Resting Heart Rate were not compared" in headline
+    assert "every tracked metric is within" not in headline.lower()
+
+    verdicts = {m["key"]: m["direction"] for m in body["metrics"]}
+    assert verdicts["activity"] == "stable"
+    assert verdicts["sleep"] == "insufficient_data"
 
 
 # --- gaps --------------------------------------------------------------------

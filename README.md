@@ -26,6 +26,20 @@ each average actually covers, and which Junction field the numbers were read fro
 Those figures are computed server-side in the same request as the headline, so the explanation
 cannot disagree with the claim it explains.
 
+## On live Junction data
+
+The same app against a live EU sandbox connection. Junction backfills 30 days of activity but
+only 11 nights of sleep, so sleep and resting heart rate report "not enough data" while activity
+compares normally — and the headline names what it could not assess rather than claiming every
+metric was within threshold. Isolated measurements are drawn as points, because a day with no
+observed neighbour has no line segment to appear in.
+
+![The dashboard on live Junction data: sleep and resting heart rate report not enough data, activity is stable, and the sleep chart shows isolated points and short segments across 11 recorded nights](docs/screenshots/live-junction.png)
+
+This is the coverage guard doing its job. A 33% baseline should not produce a confident
+comparison, and it was the one result the generated patient could not have produced, since it was
+built with enough coverage to pass.
+
 ## Architecture
 
 The browser never holds the Junction API key. It talks only to the FastAPI service, which talks

@@ -16,6 +16,8 @@ Never imply a cause or an action.
     what to do about it, is not something a 10% threshold can answer.
 """
 
+from collections.abc import Sequence
+
 from app.domain.insights import ChangeDirection, InsufficientReason, MetricChange
 from app.domain.metrics import MetricUnit
 
@@ -23,9 +25,6 @@ DISCLAIMER = "This prototype is for demonstration purposes and is not a medical 
 
 HEADLINE_TITLE = "Potential change worth reviewing"
 NO_CHANGE_TITLE = "No notable changes"
-NO_CHANGE_BODY = (
-    "Every tracked metric is within {threshold:g}% of its {baseline_days}-day baseline."
-)
 
 NO_DATA_LABEL = "No data available for this day."
 
@@ -95,3 +94,36 @@ def unit_label(unit: MetricUnit) -> str:
         MetricUnit.BPM: "beats per minute",
         MetricUnit.STEPS: "steps",
     }[unit]
+
+
+def describe_no_change(
+    threshold_pct: float,
+    baseline_days: int,
+    uncomparable: Sequence[str] = (),
+) -> str:
+    """The headline when nothing crossed the threshold.
+
+    The obvious wording — "every tracked metric is within 10% of its baseline" —
+    is false whenever a metric could not be compared at all. Live sandbox data
+    made that concrete: sleep and resting heart rate had too few recorded days
+    to compare, so claiming they were within 10% asserted a comparison that
+    never happened. Metrics that could not be assessed are named instead.
+    """
+    comparable = (
+        f"No tracked metric moved more than {threshold_pct:g}% from its "
+        f"{baseline_days}-day baseline."
+    )
+    if not uncomparable:
+        return comparable
+
+    names = _join_names(uncomparable)
+    verb = "was" if len(uncomparable) == 1 else "were"
+    return f"{comparable} {names} {verb} not compared: too few days recorded."
+
+
+def _join_names(names: Sequence[str]) -> str:
+    """ "A", "A and B", "A, B and C"."""
+    items = list(names)
+    if len(items) == 1:
+        return items[0]
+    return f"{', '.join(items[:-1])} and {items[-1]}"

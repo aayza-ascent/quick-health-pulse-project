@@ -17,7 +17,12 @@ from app.domain.insights import (
     resolve_windows,
 )
 from app.domain.metrics import ACTIVITY, RESTING_HEART_RATE, SLEEP, MetricDefinition
-from app.domain.narrative import DISCLAIMER, describe_change, short_verdict
+from app.domain.narrative import (
+    DISCLAIMER,
+    describe_change,
+    describe_no_change,
+    short_verdict,
+)
 from app.domain.series import Coverage, series_from_values
 
 ANCHOR = date(2026, 9, 8)
@@ -140,3 +145,39 @@ def test_wording_makes_no_clinical_claim():
 
 def test_disclaimer_is_explicit_about_not_being_diagnostic():
     assert "not a medical diagnostic tool" in DISCLAIMER
+
+
+class TestNoChangeWording:
+    """The no-change headline must not assert comparisons that never happened.
+
+    Live sandbox data made this concrete: sleep and resting heart rate had too
+    few recorded days to compare, so "every tracked metric is within 10% of its
+    baseline" was simply false.
+    """
+
+    def test_states_the_threshold_when_everything_was_comparable(self):
+        assert describe_no_change(10.0, 21) == (
+            "No tracked metric moved more than 10% from its 21-day baseline."
+        )
+
+    def test_names_a_single_metric_that_could_not_be_compared(self):
+        body = describe_no_change(10.0, 21, ["Sleep"])
+
+        assert body.endswith("Sleep was not compared: too few days recorded.")
+        assert "every" not in body.lower()
+
+    def test_names_two_metrics_with_a_conjunction(self):
+        body = describe_no_change(10.0, 21, ["Sleep", "Resting Heart Rate"])
+
+        assert "Sleep and Resting Heart Rate were not compared" in body
+
+    def test_names_three_metrics_as_a_list(self):
+        body = describe_no_change(10.0, 21, ["Sleep", "Resting Heart Rate", "Activity"])
+
+        assert "Sleep, Resting Heart Rate and Activity were not compared" in body
+
+    def test_never_claims_an_uncompared_metric_was_within_the_threshold(self):
+        """The specific overclaim this function exists to prevent."""
+        body = describe_no_change(10.0, 21, ["Sleep", "Resting Heart Rate"]).lower()
+
+        assert "every tracked metric is within" not in body
