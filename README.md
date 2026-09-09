@@ -105,7 +105,9 @@ users expire after seven days, so step 2 is occasionally worth repeating.
 | `GET /v2/summary/sleep/{user_id}` | Nightly sleep sessions |
 | `GET /v2/summary/activity/{user_id}` | Daily activity and heart-rate rollups |
 
-Authentication is the `x-vital-api-key` header against `api.sandbox.us.junction.com`.
+Authentication is the `x-vital-api-key` header. The host must match your team's region or every
+request returns 401 `invalid token`, which looks identical to a bad key: `sk_eu_` keys need
+`api.sandbox.eu.junction.com`, `sk_us_` keys need `api.sandbox.us.junction.com`.
 
 Demo connections are sandbox-only and expose data in Summary format, so the prototype reads
 summaries rather than raw or stream structures.
@@ -168,6 +170,12 @@ they are used and labelled.
 **"Not enough data" is a verdict, not a blank.** It carries a reason, because "the device was not
 worn enough" and "there is no history yet" are different situations for the reader.
 
+All of the above was designed against the documented schema and then checked against a live EU
+sandbox connection, which corrected one real mistake and promoted one defensive guess into a
+load-bearing feature — see [decision 12](docs/DECISIONS.md). Junction's sandbox backfills 30 days
+of activity but only 11 nights of sleep, so on live data sleep and resting heart rate report "not
+enough data" while activity compares normally. That is the coverage guard working, not a bug.
+
 ## Product decisions
 
 The full set is in [docs/DECISIONS.md](docs/DECISIONS.md). The ones that shaped the most code:
@@ -193,7 +201,7 @@ backend/
 │   ├── api/          routes, wire schemas, dependencies
 │   ├── config.py     analysis window and thresholds in one place
 │   └── errors.py     one error per failure mode
-└── tests/            120 tests
+└── tests/            124 tests
 
 frontend/
 ├── app/              server component page, design tokens
@@ -204,7 +212,7 @@ frontend/
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest -q      # 120 tests
+cd backend && .venv/bin/pytest -q      # 124 tests
 cd frontend && npm test                # 21 tests
 ```
 

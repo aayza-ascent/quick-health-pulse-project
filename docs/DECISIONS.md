@@ -170,3 +170,40 @@ it has to be the mode you are in by default, not something that can happen witho
 Relatedly, generated data is never labelled "via Junction". `SourceDescriptor` renders it as
 "Simulated Fitbit data", and the patient's connection status reads "Demo data" rather than
 "Connected".
+
+---
+
+## 12. What running against the live sandbox changed
+
+The prototype was built against Junction's documented schema with a local
+generator standing in for the sandbox. Pointing it at a real EU sandbox key
+afterwards changed three things, which is the argument for doing it rather than
+stopping at a green test suite.
+
+**`short_sleep` does not mean "nap".** Fitbit's demo data returns sessions of
+6.5-8.5 hours under that label. It was in the nap-exclusion set, so the evidence
+view reported "nap sessions only" for half the patient's nights, and any date
+carrying both a `long_sleep` and a `short_sleep` record would have dropped the
+latter from the nightly total in silence. Naps are now decided by duration,
+because the label's meaning varies by provider. Four regression tests came from
+this one observation.
+
+**`hr_resting` is never populated.** It is null on every Fitbit sleep record,
+and the daily activity rollup's `heart_rate` object is null on all thirty
+activity records. Resting heart rate exists in this app only because of the
+fallback to `hr_lowest`. The chain was written defensively from the schema;
+live data turned it into the thing holding the metric up.
+
+**Coverage is genuinely sparse, and the guard fired.** The sandbox backfills
+thirty days of activity but only eleven nights of sleep — 3 of the last 7 days,
+7 of the 21 baseline days. Sleep and resting heart rate therefore report "not
+enough data" rather than a percentage, while activity computes normally. That
+is the correct answer, and it is worth more than a tidy screen: a 33% baseline
+should not produce a confident comparison. It is also the one result that could
+not have been faked, since the generated patient was built with enough coverage
+to pass.
+
+Two smaller notes. Junction returns sleep records newest-first; nothing here
+depends on order, because series are keyed by calendar date and then densified.
+And an `sk_eu_` key against the US host returns 401 "invalid token" — identical
+to the error for a bad key, which makes a region mismatch easy to misdiagnose.
