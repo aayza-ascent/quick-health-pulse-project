@@ -203,6 +203,23 @@ should not produce a confident comparison. It is also the one result that could
 not have been faked, since the generated patient was built with enough coverage
 to pass.
 
+**The headline was overclaiming.** With nothing above threshold it read "every
+tracked metric is within 10% of its baseline" — but two of the three had too
+few recorded days to compare at all, so the sentence asserted a comparison that
+had not happened. It now names what it could not assess. This is the failure
+this project was specifically meant to avoid, and it survived until real data
+produced the combination that exposed it.
+
+**Isolated measurements were invisible.** The chart drew a line with no point
+markers, so a day whose neighbours are missing had no segment to appear in.
+Five of the eleven recorded nights were isolated, so roughly a third of the
+real data was not being displayed at all.
+
+**And the two summary reads were sequential.** Having something real to measure
+showed a request costing the sum of both round trips rather than the longer of
+them, about 240ms against 135ms. They are independent, so they now run
+concurrently.
+
 Two smaller notes. Junction returns sleep records newest-first; nothing here
 depends on order, because series are keyed by calendar date and then densified.
 And an `sk_eu_` key against the US host returns 401 "invalid token" — identical
