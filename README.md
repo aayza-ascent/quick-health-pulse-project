@@ -75,13 +75,37 @@ credentials exist — and switch to live sandbox data with no code change.
 The app runs immediately after a clone, on generated data. No Junction account needed to see it
 work.
 
-**Backend** — from `backend/`:
+### Requirements
+
+**Python 3.11 or newer** and **Node 20 or newer**. Check both before starting:
 
 ```bash
-python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/uvicorn app.main:app --reload
+python3 --version && node --version
 ```
 
-**Frontend** — from `frontend/`:
+If `python3` reports 3.9 or 3.10, install a newer one (`brew install python@3.12`) and use that
+executable by name below. macOS ships 3.9 as `/usr/bin/python3`, and `python` is often aliased to
+it, so `python -m venv` can quietly build the environment on 3.9 — which is why the commands
+below say `python3` and why the package refuses to import on anything older.
+
+### Backend
+
+From `backend/`:
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+```
+
+```bash
+.venv/bin/uvicorn app.main:app --reload
+```
+
+Substitute a specific interpreter if your default `python3` is too old, for example
+`python3.12 -m venv .venv`.
+
+### Frontend
+
+From `frontend/`, in a second terminal:
 
 ```bash
 npm install && npm run dev
@@ -89,6 +113,10 @@ npm install && npm run dev
 
 Then open <http://localhost:3000>. `GET /health` reports which data source is active, so a
 running instance is self-describing.
+
+The frontend expects the API at `http://localhost:8000`. If yours runs elsewhere, set
+`HEALTH_PULSE_API_URL` in `frontend/.env`. Start the backend first — otherwise the page renders a
+"backend unreachable" state rather than data.
 
 ### Pointing it at Junction
 

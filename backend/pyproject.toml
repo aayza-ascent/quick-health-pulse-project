@@ -48,8 +48,9 @@ pythonpath = ["."]
 filterwarnings = [
     "error",
     # Import-time deprecations from starlette's TestClient and its anyio
-    # dependency. Targeted rather than blanket, so warnings raised by this
-    # codebase still fail the suite.
-    "ignore::starlette.exceptions.StarletteDeprecationWarning",
-    "ignore:The anyio\\.abc\\..*alias is deprecated:DeprecationWarning",
+    # dependency. Matched on message rather than class: naming the class meant
+    # importing it during pytest's config parsing, which crashed with an
+    # AttributeError on any starlette version that predates it.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    "ignore:The anyio\\.abc\\..*alias is deprecated",
 ]
