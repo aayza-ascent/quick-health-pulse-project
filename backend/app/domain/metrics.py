@@ -12,7 +12,9 @@ Provider variance
 Multiple records per day
     Junction returns a record per sleep *session*, not per night, so a day with
     a nap has two. Naps are excluded from sleep duration rather than silently
-    inflating it.
+    inflating it — but what counts as a nap is decided by duration rather than
+    by the provider's label, because the labels do not mean what they appear to.
+    See EXPLICIT_NAP_TYPES.
 """
 
 from collections.abc import Iterable, Sequence
@@ -23,9 +25,18 @@ from enum import StrEnum
 from app.domain.series import DailyPoint, DailySeries, build_series
 from app.junction.models import ActivitySummary, SleepSummary
 
-# Junction's sleep `type` values that represent a nap rather than a night.
+# Only an explicit nap marker is trusted as meaning "nap".
+#
+# `short_sleep` is deliberately NOT in this set. It reads like a nap label, but
+# Junction's Fitbit sandbox returns sessions of 6.5-8.5 hours under it, so
+# treating it as a nap would exclude whole nights from the nightly total.
 # https://docs.junction.com/api-reference/data/sleep/get-summary
-NAP_TYPES = frozenset({"acknowledged_nap", "short_sleep"})
+EXPLICIT_NAP_TYPES = frozenset({"acknowledged_nap"})
+
+# Below this, a session is treated as a nap whatever it is labelled. Duration is
+# the more reliable signal: the meaning of the type field varies by provider,
+# but three hours of sleep is not a night on anyone's definition.
+NAP_MAX_SECONDS = 3 * 60 * 60
 
 
 class MetricKey(StrEnum):
@@ -99,6 +110,13 @@ def _night_sleep_seconds(session: SleepSummary) -> tuple[float, str] | None:
     return None
 
 
+def _is_nap(session: SleepSummary, seconds: float) -> bool:
+    """Whether a session should be excluded from a night's sleep total."""
+    if (session.sleep_type or "") in EXPLICIT_NAP_TYPES:
+        return True
+    return seconds < NAP_MAX_SECONDS
+
+
 def sleep_series(start: date, end: date, sessions: Iterable[SleepSummary]) -> DailySeries:
     """Nightly sleep duration in seconds.
 
@@ -114,7 +132,7 @@ def sleep_series(start: date, end: date, sessions: Iterable[SleepSummary]) -> Da
         resolved = _night_sleep_seconds(session)
         if resolved is None:
             continue
-        bucket = naps if (session.sleep_type or "") in NAP_TYPES else nights
+        bucket = naps if _is_nap(session, resolved[0]) else nights
         bucket.setdefault(session.calendar_date, []).append(resolved)
 
     observations: dict[date, DailyPoint] = {}

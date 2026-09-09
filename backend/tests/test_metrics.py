@@ -76,6 +76,48 @@ def test_naps_are_excluded_when_a_real_night_exists():
     assert series.points[0].value == 25_200
 
 
+def test_short_sleep_label_is_not_treated_as_a_nap():
+    """Regression from live Junction data.
+
+    Junction's Fitbit sandbox returns sessions of 6.5-8.5 hours labelled
+    `short_sleep`. Those are nights, and excluding them as naps would drop real
+    sleep from the nightly total.
+    """
+    series = sleep_series(DAY, DAY, [sleep(total=30_420, type="short_sleep")])
+    point = series.points[0]
+
+    assert point.value == 30_420
+    assert point.derivation == "total", "an 8h session must not be labelled a nap"
+
+
+def test_a_night_with_both_long_and_short_sleep_records_sums_both():
+    """The case the old label-based rule would have silently under-reported."""
+    series = sleep_series(
+        DAY,
+        DAY,
+        [sleep(total=18_000, type="long_sleep"), sleep(total=10_800, type="short_sleep")],
+    )
+
+    assert series.points[0].value == 28_800
+
+
+def test_a_genuinely_short_session_is_treated_as_a_nap_whatever_its_label():
+    """Duration is the more reliable signal, since label meaning varies by provider."""
+    series = sleep_series(DAY, DAY, [sleep(total=2_400, type="long_sleep")])
+
+    assert series.points[0].derivation == "nap sessions only"
+
+
+def test_a_short_session_is_excluded_when_a_real_night_exists():
+    series = sleep_series(
+        DAY,
+        DAY,
+        [sleep(total=27_000, type="long_sleep"), sleep(total=1_800, type="unknown")],
+    )
+
+    assert series.points[0].value == 27_000
+
+
 def test_a_day_of_only_naps_is_reported_and_labelled():
     """Reporting nothing would misrepresent a day that does contain data."""
     series = sleep_series(DAY, DAY, [sleep(total=3_600, type="acknowledged_nap")])
